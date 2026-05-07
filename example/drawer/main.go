@@ -21,7 +21,6 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -83,7 +82,7 @@ func main() {
 	flag.Parse()
 
 	// Read the font data.
-	fontBytes, err := ioutil.ReadFile(*fontfile)
+	fontBytes, err := os.ReadFile(*fontfile)
 	if err != nil {
 		log.Println(err)
 		return

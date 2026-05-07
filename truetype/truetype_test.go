@@ -9,7 +9,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -20,7 +19,7 @@ import (
 )
 
 func parseTestdataFont(name string) (f *Font, testdataIsOptional bool, err error) {
-	b, err := ioutil.ReadFile(fmt.Sprintf("../testdata/%s.ttf", name))
+	b, err := os.ReadFile(fmt.Sprintf("../testdata/%s.ttf", name))
 	if err != nil {
 		// The "x-foo" fonts are optional tests, as they are not checked
 		// in for copyright or file size reasons.

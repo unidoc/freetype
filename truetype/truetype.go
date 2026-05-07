@@ -578,15 +578,22 @@ func printable(r uint16) byte {
 // the given index.
 func (f *Font) unscaledHMetric(i Index) (h HMetric) {
 	j := int(i)
-	if j < 0 || f.nGlyph <= j {
+	if j < 0 || f.nGlyph <= j || f.nHMetric <= 0 {
 		return HMetric{}
 	}
 	if j >= f.nHMetric {
 		p := 4 * (f.nHMetric - 1)
+		q := p + 2*(j-f.nHMetric) + 4
+		if p+2 > len(f.hmtx) || q+2 > len(f.hmtx) {
+			return HMetric{}
+		}
 		return HMetric{
 			AdvanceWidth:    fixed.Int26_6(u16(f.hmtx, p)),
-			LeftSideBearing: fixed.Int26_6(int16(u16(f.hmtx, p+2*(j-f.nHMetric)+4))),
+			LeftSideBearing: fixed.Int26_6(int16(u16(f.hmtx, q))),
 		}
+	}
+	if 4*j+4 > len(f.hmtx) {
+		return HMetric{}
 	}
 	return HMetric{
 		AdvanceWidth:    fixed.Int26_6(u16(f.hmtx, 4*j)),
