@@ -6,6 +6,8 @@
 package truetype
 
 import (
+	"fmt"
+
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
 )
@@ -175,6 +177,21 @@ func (g *GlyphBuf) load(recursion uint32, i Index, useMyMetrics bool) (err error
 	if recursion >= 32 {
 		return UnsupportedError("excessive compound glyph recursion")
 	}
+	// Bounds-check the loca read so that a subset font referencing a glyph
+	// beyond loca's range, or a truncated loca table, does not panic.
+	// Out-of-range indices fall back to glyph 0 (.notdef), matching the
+	// placeholder behaviour of mainstream PDF viewers (e.g. Acrobat).
+	locaEntrySize := 4
+	if g.font.locaOffsetFormat == locaOffsetFormatShort {
+		locaEntrySize = 2
+	}
+	if int(i) < 0 || locaEntrySize*(int(i)+2) > len(g.font.loca) {
+		i = 0
+	}
+	if locaEntrySize*(int(i)+2) > len(g.font.loca) {
+		return FormatError(fmt.Sprintf("loca too short for glyph %d (len=%d)", i, len(g.font.loca)))
+	}
+
 	// Find the relevant slice of g.font.glyf.
 	var g0, g1 uint32
 	if g.font.locaOffsetFormat == locaOffsetFormatShort {
@@ -187,9 +204,10 @@ func (g *GlyphBuf) load(recursion uint32, i Index, useMyMetrics bool) (err error
 
 	// Decode the contour count and nominal bounding box, from the first
 	// 10 bytes of the glyf data. boundsYMin and boundsXMax, at offsets 4
-	// and 6, are unused.
+	// and 6, are unused. Also guard against loca offsets that point past
+	// the end of glyf (defense in depth against malformed subset fonts).
 	glyf, ne, boundsXMin, boundsYMax := []byte(nil), 0, fixed.Int26_6(0), fixed.Int26_6(0)
-	if g0+10 <= g1 {
+	if g0+10 <= g1 && uint64(g1) <= uint64(len(g.font.glyf)) {
 		glyf = g.font.glyf[g0:g1]
 		ne = int(int16(u16(glyf, 0)))
 		boundsXMin = fixed.Int26_6(int16(u16(glyf, 2)))
