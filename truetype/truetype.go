@@ -58,6 +58,11 @@ const (
 	// A 32-bit encoding consists of a most-significant 16-bit Platform ID and a
 	// least-significant 16-bit Platform Specific ID. The magic numbers are
 	// specified at https://www.microsoft.com/typography/otspec/name.htm
+	//
+	// The use of encoding 0, 1, and 2 is deprecated, but we support them for backward compatibility.
+	unicodeEncodingDefault  = 0x00000000 // PID = 0 (Unicode), PSID = 0 (Unicode 1.0)
+	unicodeEncoding11       = 0x00000001 // PID = 0 (Unicode), PSID = 1 (Unicode 1.1)
+	unicodeEncodingISO10646 = 0x00000002 // PID = 0 (Unicode), PSID = 2 (ISO 10646)
 	unicodeEncodingBMPOnly  = 0x00000003 // PID = 0 (Unicode), PSID = 3 (Unicode 2.0 BMP Only)
 	unicodeEncodingFull     = 0x00000004 // PID = 0 (Unicode), PSID = 4 (Unicode 2.0 Full Repertoire)
 	macintoshSimpleEncoding = 0x00010000 // PID = 1 (Macintosh), PSID = 1 (Macintosh)
@@ -152,14 +157,14 @@ func parseSubtables(table []byte, name string, offset, size int, pred func([]byt
 		if score <= bestScore {
 			continue
 		}
-		if pidPsid == unicodeEncodingBMPOnly || pidPsid == unicodeEncodingFull {
+		switch pidPsid {
+		case unicodeEncodingDefault, unicodeEncoding11, unicodeEncodingISO10646, unicodeEncodingBMPOnly, unicodeEncodingFull:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == macintoshSimpleEncoding {
+		case macintoshSimpleEncoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == microsoftSymbolEncoding {
+		case microsoftSymbolEncoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == microsoftUCS2Encoding ||
-			pidPsid == microsoftUCS4Encoding {
+		case microsoftUCS2Encoding, microsoftUCS4Encoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
 		}
 	}
