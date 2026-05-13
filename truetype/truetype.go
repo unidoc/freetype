@@ -34,30 +34,35 @@ type NameID uint16
 
 const (
 	NameIDCopyright          NameID = 0
-	NameIDFontFamily                = 1
-	NameIDFontSubfamily             = 2
-	NameIDUniqueSubfamilyID         = 3
-	NameIDFontFullName              = 4
-	NameIDNameTableVersion          = 5
-	NameIDPostscriptName            = 6
-	NameIDTrademarkNotice           = 7
-	NameIDManufacturerName          = 8
-	NameIDDesignerName              = 9
-	NameIDFontDescription           = 10
-	NameIDFontVendorURL             = 11
-	NameIDFontDesignerURL           = 12
-	NameIDFontLicense               = 13
-	NameIDFontLicenseURL            = 14
-	NameIDPreferredFamily           = 16
-	NameIDPreferredSubfamily        = 17
-	NameIDCompatibleName            = 18
-	NameIDSampleText                = 19
+	NameIDFontFamily         NameID = 1
+	NameIDFontSubfamily      NameID = 2
+	NameIDUniqueSubfamilyID  NameID = 3
+	NameIDFontFullName       NameID = 4
+	NameIDNameTableVersion   NameID = 5
+	NameIDPostscriptName     NameID = 6
+	NameIDTrademarkNotice    NameID = 7
+	NameIDManufacturerName   NameID = 8
+	NameIDDesignerName       NameID = 9
+	NameIDFontDescription    NameID = 10
+	NameIDFontVendorURL      NameID = 11
+	NameIDFontDesignerURL    NameID = 12
+	NameIDFontLicense        NameID = 13
+	NameIDFontLicenseURL     NameID = 14
+	NameIDPreferredFamily    NameID = 16
+	NameIDPreferredSubfamily NameID = 17
+	NameIDCompatibleName     NameID = 18
+	NameIDSampleText         NameID = 19
 )
 
 const (
 	// A 32-bit encoding consists of a most-significant 16-bit Platform ID and a
 	// least-significant 16-bit Platform Specific ID. The magic numbers are
 	// specified at https://www.microsoft.com/typography/otspec/name.htm
+	//
+	// The use of encoding 0, 1, and 2 is deprecated, but we support them for backward compatibility.
+	unicodeEncodingDefault  = 0x00000000 // PID = 0 (Unicode), PSID = 0 (Unicode 1.0)
+	unicodeEncoding11       = 0x00000001 // PID = 0 (Unicode), PSID = 1 (Unicode 1.1)
+	unicodeEncodingISO10646 = 0x00000002 // PID = 0 (Unicode), PSID = 2 (ISO 10646)
 	unicodeEncodingBMPOnly  = 0x00000003 // PID = 0 (Unicode), PSID = 3 (Unicode 2.0 BMP Only)
 	unicodeEncodingFull     = 0x00000004 // PID = 0 (Unicode), PSID = 4 (Unicode 2.0 Full Repertoire)
 	macintoshSimpleEncoding = 0x00010000 // PID = 1 (Macintosh), PSID = 1 (Macintosh)
@@ -152,14 +157,14 @@ func parseSubtables(table []byte, name string, offset, size int, pred func([]byt
 		if score <= bestScore {
 			continue
 		}
-		if pidPsid == unicodeEncodingBMPOnly || pidPsid == unicodeEncodingFull {
+		switch pidPsid {
+		case unicodeEncodingDefault, unicodeEncoding11, unicodeEncodingISO10646, unicodeEncodingBMPOnly, unicodeEncodingFull:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == macintoshSimpleEncoding {
+		case macintoshSimpleEncoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == microsoftSymbolEncoding {
+		case microsoftSymbolEncoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
-		} else if pidPsid == microsoftUCS2Encoding ||
-			pidPsid == microsoftUCS4Encoding {
+		case microsoftUCS2Encoding, microsoftUCS4Encoding:
 			bestOffset, bestPID, bestScore = offset, pidPsid>>16, score
 		}
 	}
